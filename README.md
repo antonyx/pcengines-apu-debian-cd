@@ -12,17 +12,17 @@ This installation is only intended for an mSATA drive on the APU
 board. If you plan to boot from SD card, use Voyage Linux instead:
 http://linux.voyage.hk/
 
-The configuration files build amd64 installer for the APU platform (APU
-versions 1, 2, and 3 have been tested).
+The configuration files build an amd64 installer for the APU platform
+(APU versions 1, 2, and 3 have been tested).
 
 The build machine MUST be of the same Debian release as the image that
-you are building: a Jessie host can produce a Jessie ISO, and a Stretch
+you are building: a Buster host can produce a Buster ISO, and a Stretch
 host can produce a Stretch ISO.
 
 Before using these scripts, have a look at the files in profiles/, and
-you may want to change some options.
-
-There are two profiles defined in profiles/ directory: "apu64" and "manual".
+you may want to change some options. The "wget_debian_mirror" parameter
+should point to a working FTP mirror, so you may want to select a mirror
+near you.
 
 
 "apu64" profile
@@ -30,21 +30,11 @@ There are two profiles defined in profiles/ directory: "apu64" and "manual".
 
 This profile is designed to automate as much as possible.
 
-The default hostname is set to "apu", unless DHCP delivers a different
+The default hostname is set to "gw", unless DHCP delivers a different
 name. Default root password is "pcengines", and it is defined in
 "profiles/apu64.preseed".
 
-By default, the installer asks for the host name (this is the only thing
-that is manually entered). If you want to skip the hostname prompt,
-comment out the following line in "profiles/apu64.preseed":
-
-d-i netcfg/get_hostname seen false
-
-By default the installer requires that repositories be authenticated using
-a known gpg key. Uncomment the following line in "profiles/apu64.preseed"
-to disable that authentication. Warning: Insecure, not recommended.
-
-#d-i debian-installer/allow_unauthenticated boolean true
+If you want to change the hostname edit "profiles/apu64.preseed".
 
 The disk layout does not allocate a swap partition (the APU board has 2
 or 4GB RAM). If you need swap, you can add a swapfile in root
@@ -54,17 +44,6 @@ vm.swappiness=1 in /etc/sysctl.d/pcengines_apu.conf
 The profile adds an hourly cronjob
 (/etc/cron.hourly/pcengines_apu_fstrim) which performs fstrim command on
 root and boot partitions once a day.
-
-
-"manual" profile
-----------------
-
-This profile disables the automation, and lets you choose the region,
-the debian mirror, the hostname and password, and it allows you to
-choose the disk partitioning that you need. You can also configure
-software RAID if you have multiple physical disks.
-
-The manual profile does not install the fstrim cronjob.
 
 
 Notes
@@ -81,17 +60,59 @@ If you need a live or rescue CD, you can get a Live CD from Voyage
 Linux. It works fine, the only minor issue is that it switches the
 serial console to 9600 baud: http://linux.voyage.hk/
 
-The SSH daemon has `PermitRootLogin without-password` by default,
+The SSH daemon now has `PermitRootLogin without-password` by default,
 which disallows the root to login with a password. You either need to
 install your public SSH key in root's autorized_keys, or change the SSH
 daemon configuration.
+This setting is overridden during the installation, please secure it later!
+
+
+Building the image
+------------------
+
+The build machine needs to be Debian Buster. Other Debian versions or
+Ubuntu are not fully tested and there are some issues, not yet fully
+investigated.
+
+
+Build the CD image on the build machine:
+
+## install prerequisites
+apt-get update
+apt-get install -y simple-cdd git-core
+
+## get our latest files
+mkdir /opt/pcengines
+cd /opt/pcengines
+git clone https://github.com/antonyx/pcengines-apu-debian-cd.git .
+
+## build the installation CD image. If you need to build another ISO
+# image of a different architecture inside the same path, delete the
+# contents of "tmp/" subdirectory.
+# Run the following command as anormal user.
+# If you run it as root, use "--force-root" option:
+
+./build.sh apu64
+
+
+Build the CD image on the build machine using Docker:
+
+## build the installation CD image
+# Run the following command:
+
+./docker-build.sh apu64
+
+
+In case of a failure, delete the contents of tmp/ subfolder.
+Sometimes problems with accessing the mirror leave garbage in tmp/
+and this breaks the execution of build-simple-cdd
 
 
 Binary releases
 ---------------
 
 64-bit installer ISO images are available at GitHub in Releases section:
-https://github.com/ssinyagin/pcengines-apu-debian-cd/releases
+https://github.com/antonyx/pcengines-apu-debian-cd/releases
 
 
 Installation
@@ -105,66 +126,37 @@ SSD drive.
 
 !!! ALL EXISTING DATA ON THE DRIVE WILL BE LOST !!!
 
-The build machine needs to be Debian Stretch (Debian Jessie was
-supported up to commit f01e3e97). Other Debian versions or Ubuntu are
-not fully tested.
-
 Both the build machine and the APU board need the Internet connection
-during the installation. The installer assumes that enp1s0 (marked as
+during the installation. The installer assumes that eth0 (marked as
 LAN1 on the APU board) is connected to a network with DHCP service and
 Internet access.
 
 The installation ISO image is about 200MB in size.
 
-Create the CD image on the build machine:
-
-## install prerequisites
-apt-get update
-apt-get install -y simple-cdd git xorriso lsb-release
-
-## get our latest files
-mkdir /opt/pcengines
-cd /opt/pcengines
-git clone https://github.com/ssinyagin/pcengines-apu-debian-cd.git .
-
-## build the installation CD image. If you need to build another ISO
-# image of a different architecture inside the same path, delete the
-# contents of "tmp/" subdirectory. Run the following command as anormal
-# user. If you run it as root, use "--force-root" option:
-
-./build apu64
-
-# In case of a failure, delete the contents of tmp/ subfolder.
-# Sometimes problems with accessing the mirror leave garbage in tmp/
-# and this breaks the execution of build-simple-cdd
+## download the binary release or build the installation ISO image file
 
 ## insert the USB stick into the build machine
 
 ## check where your USB stick is
 fdisk -l
 
-## copy the installer CD image
-dd if=images/debian-9.1-amd64-CD-1.iso of=/dev/sdc bs=16M
+## copy the installer CD image and check the correct target device
+dd if=images/debian-10-amd64-CD-1.iso of=/dev/sdc bs=16M
 
 ## Insert the USB stick into APU board and connect a serial terminal at
 ## 115200 baud rate.  The terminal emulator should be vt220 or xterm
-## (vt100 does not have F10 and F12). APU model 1 uses F12, and APU
-## model 2 uses F10 in the boot prompt. When the prompt appears, press
-## F12 or F10, correspondingly, and select your USB stick as boot
-## source.
+## (vt100 does not have F10 and F12).
+## APU model 1 uses F12, and APU model 2 uses F10 in the boot prompt.
+## When the prompt appears, press F12 or F10, correspondingly,
+## and select your USB stick as boot source.
 
 ## The installation starts automatically, and it will ask for a hostname
 ## within a couple of minutes. Then it will continue, and halt when the
 ## installation finishes.
 
 
-
 Author
 ------
-Stanislav Sinyagin
-ssinyagin@k-open.com
+Anto Nix
 
-Donations
----------
-BTC: 18hG6hfnocrvr2Jn1TvSQRFywt6psxTEjM
-ETH: 0x6BF743E7F92DCa5CDf5C7F36BDe4cf76896336aB
+Forked from a work of Stanislav Sinyagin <ssinyagin@k-open.com>

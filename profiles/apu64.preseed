@@ -1,19 +1,31 @@
 # set the deadline scheduler globally for better SSD performance
-d-i debian-installer/add-kernel-opts string video=off\
- elevator=deadline console=ttyS0,115200
+d-i debian-installer/add-kernel-opts string video=off elevator=deadline console=ttyS0,115200
 
-# Skip creation of a normal user account.
-d-i passwd/make-user boolean false
+# Disable splash screen
+d-i debian-installer/splash boolean false
 
+# Keyboard selection
+d-i console-setup/ask_detect boolean false
+d-i keymap select us
+d-i debian-installer/keymap select us
+d-i keyboard-configuration/modelcode string pc105
+d-i keyboard-configuration/layout select USA
+d-i keyboard-configuration/variant select USA
+d-i keyboard-configuration/layoutcode string us
+d-i keyboard-configuration/xkb-keymap select us
 
 # Any hostname and domain names assigned from dhcp take precedence over
 # values set here. However, setting the values still prevents the questions
 # from being shown, even if values come from dhcp.
-d-i netcfg/get_hostname string apu
+d-i netcfg/get_hostname string gw
 
-d-i netcfg/get_hostname seen false
+# Not prompting for hostname anymore
+d-i netcfg/get_hostname seen true
 
+# Selecting the network interface closest to the serial port
 d-i netcfg/choose_interface select enp1s0
+# Alternatively, select the first interface that has network connectivity onto it
+#d-i netcfg/choose_interface select auto
 
 # Automatically label the disk without asking
 d-i partman-auto/choose_recipe select boot-root
@@ -66,7 +78,6 @@ d-i clock-setup/ntp-server string pool.ntp.org
 # authentication. Warning: Insecure, not recommended.
 # d-i debian-installer/allow_unauthenticated boolean true
 
-
 # Some versions of the installer can report back on what software you have
 # installed, and what software you use. The default is not to report back,
 # but sending reports helps the project determine what software is most
@@ -78,17 +89,19 @@ popularity-contest popularity-contest/participate boolean false
 
 d-i debian-installer/locale string en_US.UTF-8
 d-i debian-installer/language string en
-d-i debian-installer/country string CH
+d-i debian-installer/country string IT
 
-d-i time/zone string Europe/Zurich
+d-i time/zone string Europe/Rome
+
+# Skip creation of a normal user account.
+d-i passwd/make-user boolean false
 
 passwd   passwd/root-password    password pcengines
 passwd   passwd/root-password-again  password pcengines
 
-
 d-i mirror/protocol string http
 d-i mirror/country string manual
-d-i mirror/http/hostname string deb.debian.org
+d-i mirror/http/hostname string httpredir.debian.org
 d-i mirror/http/directory string /debian
 d-i mirror/http/proxy string
 
@@ -100,7 +113,16 @@ d-i netcfg/wireless_wep string
 # Allow non-free firmware
 d-i hw-detect/load_firmware boolean true
 
+# Allowing to install packages from contrib and non-free
+d-i apt-setup/non-free boolean true
+d-i apt-setup/contrib boolean true
+# Not scanning for another DVD/CD
+d-i apt-setup/cdrom/set-first boolean false
+d-i apt-setup/cdrom/set-next boolean false
+d-i apt-setup/cdrom/set-failed boolean false
+
+# Setup the grub settings
+d-i preseed/late_command string in-target sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="quiet"/GRUB_CMDLINE_LINUX_DEFAULT="video=off elevator=deadline console=ttyS0,115200"/g' /etc/default/grub
+
 ### halt when finished
 d-i debian-installer/exit/halt boolean true
-
-

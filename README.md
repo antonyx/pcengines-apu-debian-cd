@@ -77,28 +77,34 @@ investigated.
 
 Build the CD image on the build machine:
 
-## install prerequisites
+1. install prerequisites
+
+```
 apt-get update
 apt-get install -y simple-cdd git-core
+```
 
-## get our latest files
+2. get our latest files
+
+```
 mkdir /opt/pcengines
 cd /opt/pcengines
 git clone https://github.com/antonyx/pcengines-apu-debian-cd.git .
+```
 
-## build the installation CD image. If you need to build another ISO
-# image of a different architecture inside the same path, delete the
-# contents of "tmp/" subdirectory.
-# Run the following command as anormal user.
-# If you run it as root, use "--force-root" option:
+3. build the installation CD image. If you need to build another ISO
+image of a different architecture inside the same path, delete the
+contents of "tmp/" subdirectory.
+
+Run the following command as anormal user.
+If you run it as root, use "--force-root" option:
 
 ./build.sh apu64
 
 
-Build the CD image on the build machine using Docker:
+Build the CD image on the build machine using Docker.
 
-## build the installation CD image
-# Run the following command:
+Run the following command to build the apu64 profile:
 
 ./docker-build.sh apu64
 
@@ -112,6 +118,7 @@ Binary releases
 ---------------
 
 64-bit installer ISO images are available at GitHub in Releases section:
+
 https://github.com/antonyx/pcengines-apu-debian-cd/releases
 
 
@@ -131,28 +138,32 @@ during the installation. The installer assumes that eth0 (marked as
 LAN1 on the APU board) is connected to a network with DHCP service and
 Internet access.
 
-The installation ISO image is about 200MB in size.
+The installation ISO image is about 350MB in size.
 
-## download the binary release or build the installation ISO image file
+1. Download the binary release or build the installation ISO image file
 
-## insert the USB stick into the build machine
+2. Insert the USB stick into the build machine
 
-## check where your USB stick is
+3. Check where your USB stick is using:
+
 fdisk -l
 
-## copy the installer CD image and check the correct target device
+4. Copy the installer CD image and check the correct target device
+
 dd if=images/debian-10-amd64-CD-1.iso of=/dev/sdc bs=16M
 
-## Insert the USB stick into APU board and connect a serial terminal at
-## 115200 baud rate.  The terminal emulator should be vt220 or xterm
-## (vt100 does not have F10 and F12).
-## APU model 1 uses F12, and APU model 2 uses F10 in the boot prompt.
-## When the prompt appears, press F12 or F10, correspondingly,
-## and select your USB stick as boot source.
+5. Insert the USB stick into APU board and connect a serial terminal at
+115200 baud rate.
+The terminal emulator should be vt220 or xterm (vt100 does not have F10 and F12).
 
-## The installation starts automatically, and it will ask for a hostname
-## within a couple of minutes. Then it will continue, and halt when the
-## installation finishes.
+APU model 1 uses F12, and APU model 2 uses F10 in the boot prompt.
+When the prompt appears, press F12 or F10, correspondingly,
+and select your USB stick as boot source.
+
+The installation starts automatically and halt when the installation finishes.
+
+Note: It's mandatory for fully automated installation to have a working internet connection
+with DHCP enabled on one of the available ethernet ports.
 
 
 Author
